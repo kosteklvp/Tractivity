@@ -1,0 +1,72 @@
+{
+  "name": "tractivity",
+  "version": "0.1.0",
+  "description": "Tractivity desktop app for tracking effective work time",
+  "main": "dist/main/main.js",
+  "type": "module",
+  "scripts": {
+    "tsc": "tsc --noEmit -p tsconfig.json",
+    "build": "npm run clean && npm run build:ts && npm run copy-static",
+    "build:ts": "tsc -p tsconfig.json",
+    "clean": "rimraf dist",
+    "copy-static": "copyfiles -u 2 src/renderer/**/*.html src/renderer/**/*.css dist/renderer",
+    "start": "npm run build && electron dist/main/main.js",
+    "dev": "concurrently \"npm:watch:ts\" \"npm:serve\"",
+    "watch:ts": "tsc -w -p tsconfig.json",
+    "serve": "wait-on dist/main/main.js dist/renderer/index.html && electron dist/main/main.js",
+    "test": "vitest run",
+    "lint": "eslint . --ext .ts",
+  "dist:win": "cmd /c \"taskkill /F /IM Tractivity.exe 2>NUL & taskkill /F /IM electron.exe 2>NUL & exit /B 0\" && rimraf release/windows-build && npm run build && electron-builder --win"
+  },
+  "keywords": [
+    "electron",
+    "typescript",
+    "timer"
+  ],
+  "author": "",
+  "license": "MIT",
+  "build": {
+    "appId": "com.kosteklvp.tractivity",
+    "productName": "Tractivity",
+    "directories": {
+      "output": "release/windows-build"
+    },
+    "files": [
+      "dist/**/*",
+      "package.json"
+    ],
+    "asar": true,
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@typescript-eslint/eslint-plugin": "^6.14.0",
+    "@typescript-eslint/parser": "^6.14.0",
+    "concurrently": "^8.2.2",
+    "copyfiles": "^2.4.1",
+    "electron": "^28.2.0",
+    "electron-builder": "^24.9.1",
+    "eslint": "^8.56.0",
+    "rimraf": "^5.0.5",
+    "typescript": "^5.3.3",
+    "vitest": "^1.0.4",
+    "wait-on": "^7.2.0"
+  }
+}
