@@ -8,14 +8,31 @@
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
-  <main class="container">
-    <h1>Tractivity</h1>
-    <div class="timer-display" id="timerDisplay">00:00:00</div>
-    <div class="controls">
-      <button id="startPauseBtn" type="button">Start</button>
-      <button id="resetBtn" type="button" disabled>Reset</button>
-    </div>
+  <main class="layout">
+    <section class="panel timer-panel">
+      <div class="timer-display" id="timerDisplay">00:00:00</div>
+      <div class="status" id="statusLabel"></div>
+    </section>
+    <section class="panel controls-panel">
+      <div class="controls">
+        <button id="startPauseBtn" type="button">Start</button>
+        <button id="resetBtn" type="button" disabled>Reset</button>
+      </div>
+    </section>
+    <section class="panel menu-panel">
+      <nav class="menu-placeholder">
+        <p>Menu placeholder</p>
+      </nav>
+    </section>
+    <section class="panel main-panel">
+      <div class="main-placeholder">
+        <p>Main content placeholder</p>
+      </div>
+    </section>
   </main>
+  <footer class="dev-footer">
+    <div class="debug" id="debugInfo"></div>
+  </footer>
   <script type="module" src="./index.js"></script>
 </body>
 </html>
