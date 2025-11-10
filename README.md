@@ -44,5 +44,4 @@ tests/        Vitest unit tests for timer behaviour
 ## Roadmap
 
 - Session history with persistent storage.
-- Multiple concurrent timers.
 - Installation packages for macOS and Linux.
