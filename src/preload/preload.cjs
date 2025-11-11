@@ -14,5 +14,11 @@ contextBridge.exposeInMainWorld('tractivityApi', {
     return () => {
       ipcRenderer.removeListener('ui:open-settings', listener);
     };
+  },
+  todos: {
+    list: () => ipcRenderer.invoke('todos:list'),
+    create: (title) => ipcRenderer.invoke('todos:create', { title }),
+    setCompleted: (id, completed) => ipcRenderer.invoke('todos:setCompleted', { id, completed }),
+    delete: (id) => ipcRenderer.invoke('todos:delete', { id })
   }
 });

@@ -15,7 +15,7 @@
     "watch:ts": "tsc -w -p tsconfig.json",
     "serve": "wait-on dist/main/main.js dist/renderer/index.html && electron dist/main/main.js",
     "test": "vitest run",
-    "lint": "eslint . --ext .ts",
+  "lint": "eslint . --ext .ts",
     "dist": "cmd /c \"taskkill /F /IM Tractivity.exe 2>NUL & taskkill /F /IM electron.exe 2>NUL & exit /B 0\" && rimraf release/windows-build && npm run build && electron-builder --win"
   },
   "keywords": [

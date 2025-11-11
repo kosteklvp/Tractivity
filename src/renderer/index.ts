@@ -25,6 +25,17 @@ type TimerContext = {
   handleUserActivity: () => void;
 };
 
+type TodoPanelElements = {
+  form: HTMLFormElement;
+  input: HTMLInputElement;
+  submitButton: HTMLButtonElement;
+  list: HTMLUListElement;
+  emptyState: HTMLElement;
+  message: HTMLElement;
+};
+
+const TODO_MESSAGE_TIMEOUT_MS = 4000;
+
 const DEFAULT_SETTINGS: SettingsState = {
   afkHandlingEnabled: true,
   afkIdleDelaySeconds: DEFAULT_IDLE_DELAY_SECONDS
@@ -299,9 +310,183 @@ const initializeSettingsPanel = (context: TimerContext): void => {
   showSettings();
 };
 
+const getTodoPanelElements = (): TodoPanelElements => {
+  const form = document.getElementById('todoForm') as HTMLFormElement | null;
+  const input = document.getElementById('todoInput') as HTMLInputElement | null;
+  const submitButton = form?.querySelector('button[type="submit"]') as HTMLButtonElement | null;
+  const list = document.getElementById('todoList') as HTMLUListElement | null;
+  const emptyState = document.getElementById('todoEmpty');
+  const message = document.getElementById('todoMessage');
+
+  if (!form || !input || !submitButton || !list || !emptyState || !message) {
+    throw new Error('Todo panel elements are missing from the document.');
+  }
+
+  return { form, input, submitButton, list, emptyState, message };
+};
+
+const initializeTodoPanel = async (): Promise<void> => {
+  const elements = getTodoPanelElements();
+  const api = window.tractivityApi;
+
+  if (!api?.todos) {
+    console.warn('Todo API is unavailable.');
+    elements.form.classList.add('hidden');
+    elements.message.classList.remove('hidden');
+    elements.message.textContent = 'Tasks are unavailable in this build.';
+    elements.message.classList.add('is-error');
+    return;
+  }
+
+  let todoItems: TodoItem[] = [];
+  let messageTimeoutId: number | undefined;
+
+  const hideMessage = (): void => {
+    elements.message.textContent = '';
+    elements.message.classList.add('hidden');
+    elements.message.classList.remove('is-info', 'is-error');
+  };
+
+  const showMessage = (text: string, intent: 'info' | 'error' = 'info'): void => {
+    window.clearTimeout(messageTimeoutId);
+
+    if (!text) {
+      hideMessage();
+      return;
+    }
+
+    elements.message.textContent = text;
+    elements.message.classList.remove('hidden');
+    elements.message.classList.remove('is-info', 'is-error');
+    elements.message.classList.add(intent === 'error' ? 'is-error' : 'is-info');
+
+    messageTimeoutId = window.setTimeout(() => {
+      hideMessage();
+    }, TODO_MESSAGE_TIMEOUT_MS);
+  };
+
+  const renderList = (): void => {
+    elements.list.innerHTML = '';
+
+    if (todoItems.length === 0) {
+      elements.emptyState.classList.remove('hidden');
+      return;
+    }
+
+    elements.emptyState.classList.add('hidden');
+
+    const fragment = document.createDocumentFragment();
+
+    todoItems.forEach((todo) => {
+      const listItem = document.createElement('li');
+      listItem.className = 'todo-item';
+
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.checked = todo.completed;
+
+      const title = document.createElement('p');
+      title.className = 'todo-title';
+      title.textContent = todo.title;
+
+      if (todo.completed) {
+        title.classList.add('is-completed');
+      }
+
+      const actions = document.createElement('div');
+      actions.className = 'todo-actions';
+
+      const removeButton = document.createElement('button');
+      removeButton.type = 'button';
+      removeButton.className = 'todo-remove';
+      removeButton.textContent = 'Delete';
+
+      checkbox.addEventListener('change', async () => {
+        const nextCompleted = checkbox.checked;
+        checkbox.disabled = true;
+        title.classList.toggle('is-completed', nextCompleted);
+
+        try {
+          const updated = await api.todos.setCompleted(todo.id, nextCompleted);
+          todoItems = todoItems.map((item) => (item.id === updated.id ? updated : item));
+          showMessage(nextCompleted ? 'Task completed.' : 'Task re-opened.', 'info');
+        } catch (error) {
+          console.error('Failed to update todo item.', error);
+          checkbox.checked = !nextCompleted;
+          title.classList.toggle('is-completed', checkbox.checked);
+          showMessage('Could not update the task.', 'error');
+        } finally {
+          checkbox.disabled = false;
+        }
+      });
+
+      removeButton.addEventListener('click', async () => {
+        removeButton.disabled = true;
+
+        try {
+          await api.todos.delete(todo.id);
+          todoItems = todoItems.filter((item) => item.id !== todo.id);
+          renderList();
+          showMessage('Task removed.', 'info');
+        } catch (error) {
+          console.error('Failed to delete todo item.', error);
+          showMessage('Could not remove the task.', 'error');
+        } finally {
+          removeButton.disabled = false;
+        }
+      });
+
+      actions.appendChild(removeButton);
+      listItem.appendChild(checkbox);
+      listItem.appendChild(title);
+      listItem.appendChild(actions);
+
+      fragment.appendChild(listItem);
+    });
+
+    elements.list.appendChild(fragment);
+  };
+
+  elements.form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    const title = elements.input.value.trim();
+
+    if (!title) {
+      showMessage('Please enter a task description first.', 'error');
+      return;
+    }
+
+    elements.submitButton.disabled = true;
+
+    try {
+      const created = await api.todos.create(title);
+      todoItems = [created, ...todoItems];
+      elements.input.value = '';
+      renderList();
+      showMessage('Task added.', 'info');
+    } catch (error) {
+      console.error('Failed to create todo item.', error);
+      showMessage('Could not save the task.', 'error');
+    } finally {
+      elements.submitButton.disabled = false;
+      elements.input.focus();
+    }
+  });
+
+  try {
+    todoItems = await api.todos.list();
+    renderList();
+  } catch (error) {
+    console.error('Failed to load todos.', error);
+    showMessage('Could not load tasks. Try again later.', 'error');
+  }
+};
+
 document.addEventListener('DOMContentLoaded', () => {
   const loadedSettings = loadSettings();
   const timerContext = initializeTimerUI(loadedSettings);
 
   initializeSettingsPanel(timerContext);
+  void initializeTodoPanel();
 });

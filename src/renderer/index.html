@@ -56,6 +56,31 @@
         </p>
       </section>
     </section>
+    <section class="panel todo-panel">
+      <header class="todo-header">
+        <h2>Tasks</h2>
+        <p class="todo-subtitle">Keep track of quick todos while the timer runs.</p>
+      </header>
+      <form class="todo-form" id="todoForm" autocomplete="off">
+        <label class="visually-hidden" for="todoInput">New task</label>
+        <input
+          id="todoInput"
+          type="text"
+          name="title"
+          placeholder="Add a new task..."
+          maxlength="500"
+          required
+        />
+        <button type="submit">Add</button>
+      </form>
+      <div class="todo-message hidden" id="todoMessage" role="status"></div>
+      <div class="todo-body">
+        <ul class="todo-list" id="todoList"></ul>
+        <div class="todo-empty" id="todoEmpty">
+          <p>No tasks yet. Create one above to get started.</p>
+        </div>
+      </div>
+    </section>
   </main>
   <footer class="dev-footer">
     <div class="debug" id="debugInfo"></div>
