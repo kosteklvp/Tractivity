@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 const appDir = dirname(fileURLToPath(import.meta.url));
 
 ipcMain.handle('system:getIdleTime', () => powerMonitor.getSystemIdleTime());
-
+//
 const createMainWindow = (): void => {
   const window = new BrowserWindow({
     width: 800,
@@ -13,7 +13,7 @@ const createMainWindow = (): void => {
     minWidth: 800,
     minHeight: 600,
     resizable: true,
-    fullscreenable: true,
+    fullscreenable: true,//
     title: 'Tractivity',
     icon: join(appDir, '../assets/icon.ico'),
     webPreferences: {
