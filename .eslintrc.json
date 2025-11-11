@@ -5,7 +5,7 @@
     "node": true,
     "es2021": true
   },
-  "ignorePatterns": ["dist", "node_modules", "vitest.config.ts"],
+  "ignorePatterns": ["dist", "node_modules", "vitest.config.ts", "src/preload/*.cjs"],
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
     "project": ["./tsconfig.json"],

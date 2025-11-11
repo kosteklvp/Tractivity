@@ -1,5 +1,5 @@
 :root {
-  color-scheme: light dark;
+  color-scheme: only light;
   font-family: 'Segoe UI', Arial, sans-serif;
 }
 
@@ -7,37 +7,102 @@ body {
   margin: 0;
   min-height: 100vh;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(160deg, #1f1f2b, #2f3442);
-  color: #f5f5f5;
+  flex-direction: column;
+  background: #ffffff;
+  color: #1a1a1a;
 }
 
-.container {
+.layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  grid-template-rows: 120px minmax(0, 1fr);
+  gap: 16px;
+  padding: 24px;
+  flex: 1;
+  box-sizing: border-box;
+}
+
+.panel {
+  border: 1px solid #dcdcdc;
+  border-radius: 12px;
+  padding: 16px;
+  background: #f9f9f9;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  padding: 24px 28px;
-  border-radius: 18px;
-  background-color: rgba(20, 20, 28, 0.9);
-  box-shadow: 0 16px 35px rgba(0, 0, 0, 0.35);
-  width: 260px;
-  text-align: center;
+  gap: 12px;
+  min-height: 0;
 }
 
-h1 {
-  font-size: 20px;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  margin: 0;
+.timer-panel {
+  grid-column: 1 / 2;
+  grid-row: 1 / 2;
+  justify-content: center;
+}
+
+.controls-panel {
+  grid-column: 2 / 3;
+  grid-row: 1 / 2;
+  align-items: flex-start;
+}
+
+.menu-panel {
+  grid-column: 1 / 2;
+  grid-row: 2 / 3;
+  min-height: 0;
+}
+
+.main-panel {
+  grid-column: 2 / 3;
+  grid-row: 2 / 3;
+  min-height: 0;
+}
+
+.menu {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.menu-item {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: #1a1a1a;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.menu-item:hover,
+.menu-item:focus-visible {
+  background: rgba(68, 82, 255, 0.08);
+  border-color: rgba(68, 82, 255, 0.32);
+  outline: none;
+}
+
+.menu-item.is-active {
+  background: rgba(68, 82, 255, 0.14);
+  border-color: rgba(68, 82, 255, 0.48);
 }
 
 .timer-display {
-  font-size: 48px;
-  font-weight: 700;
-  letter-spacing: 4px;
+  font-size: 44px;
+  font-weight: 600;
+  letter-spacing: 1px;
   font-variant-numeric: tabular-nums;
+  color: #1a1a1a;
+}
+
+.status {
+  min-height: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6a62ff;
+  text-transform: uppercase;
 }
 
 .controls {
@@ -46,20 +111,20 @@ h1 {
 }
 
 button {
-  flex: 1;
-  padding: 10px 16px;
+  width: 120px;
+  padding: 10px 0;
   border: none;
-  border-radius: 999px;
+  border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  background: #5b6be1;
-  color: #fff;
+  background: #4452ff;
+  color: #ffffff;
   transition: background 0.2s ease, transform 0.2s ease;
 }
 
 button:hover:enabled {
-  background: #7786ff;
+  background: #5c6dff;
 }
 
 button:active:enabled {
@@ -67,6 +132,109 @@ button:active:enabled {
 }
 
 button:disabled {
-  opacity: 0.4;
+  opacity: 0.5;
   cursor: not-allowed;
+}
+
+.main-placeholder {
+  flex: 1;
+  border: 1px dashed #cfcfcf;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9a9a9a;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.settings-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 8px;
+  border: 1px solid #e4e4e4;
+}
+
+.settings-header h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.settings-description {
+  margin: 4px 0 0;
+  color: #5a5a5a;
+  font-size: 13px;
+}
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.setting-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  user-select: none;
+}
+
+.setting-checkbox input {
+  width: 18px;
+  height: 18px;
+}
+
+.setting-input {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 180px;
+}
+
+.setting-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #5a5a5a;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.setting-input input {
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #cccccc;
+  font-size: 14px;
+  width: 140px;
+}
+
+.setting-input input:disabled {
+  background: #f0f0f0;
+  cursor: not-allowed;
+}
+
+.setting-hint {
+  margin: 0;
+  font-size: 12px;
+  color: #666666;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.dev-footer {
+  border-top: 1px solid #e5e5e5;
+  padding: 12px 24px;
+  background: #fafafa;
+}
+
+.debug {
+  font-size: 12px;
+  color: #666666;
+  letter-spacing: 0.5px;
 }

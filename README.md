@@ -1,47 +1,47 @@
 # Tractivity
 
-Minimalistyczna aplikacja desktopowa (Electron + TypeScript) do śledzenia efektywnego czasu pracy. Pierwsza wersja oferuje pojedynczy licznik czasu z przyciskami Start/Pause oraz Reset.
+Tractivity is a minimalist desktop timer built with Electron and TypeScript. It focuses on accurate work-time tracking with an auto-pause feature that relies on system idle time, plus a simple UI layout designed around expandable panels.
 
-## Wymagania
+## Requirements
 
-- Node.js 18 lub nowszy
-- npm 9 lub nowszy
+- Node.js 18 or newer
+- npm 9 or newer
 
-## Instalacja
+## Installation
 
 ```bash
 npm install
 ```
 
-## Dostępne skrypty
+## Available scripts
 
-- `npm start` – kompiluje projekt i uruchamia aplikację Electron.
-- `npm run dev` – tryb deweloperski z watcherami (wymaga środowiska graficznego).
-- `npm run build` – buduje wersję produkcyjną w katalogu `dist`.
-- `npm test` – uruchamia testy Vitest dla logiki timera.
-- `npm run lint` – uruchamia ESLint dla plików TypeScript.
-- `npm run dist:win` – buduje instalator Windows (`release/`).
+- `npm start` – build the project and launch the Electron app.
+- `npm run dev` – start the development mode with TypeScript watch and auto-relaunch (requires a desktop session).
+- `npm run build` – produce the compiled output in the `dist` directory.
+- `npm test` – run the Vitest suite that covers timer and inactivity logic.
+- `npm run lint` – run ESLint on all TypeScript sources.
+- `npm run dist:win` – create the Windows distributables under `release/`.
 
-## Struktura projektu
+## Project structure
 
 ```text
 src/
-  main/       Logika procesu głównego Electron
-  preload/    Wystawienie API do procesu renderera
-  renderer/   UI timera i logika front-end
-tests/        Testy jednostkowe logiki timera
+  assets/     Application assets (icons, static files)
+  main/       Electron main-process logic
+  preload/    Preload bridge that exposes safe APIs to the renderer
+  renderer/   Timer UI, inactivity monitor, and styling
+tests/        Vitest unit tests for timer behaviour
 ```
 
-## Budowa instalatora Windows
+## Building the Windows installer
 
-1. Uruchom pakowanie: `npm run dist:win` (skrypt czyści wcześniejszy katalog `release/windows-build`).
-2. Procedura automatycznie zbuduje kod TypeScript i przygotuje paczki Windows.
-3. Gotowe pliki znajdziesz w katalogu `release/windows-build/` (instalator NSIS oraz wersja portable).
+1. Run `npm run dist:win` (the script clears any previous `release/windows-build` contents).
+2. The task compiles TypeScript, copies static assets, and invokes `electron-builder`.
+3. The resulting NSIS installer and portable build are stored in `release/windows-build/`.
 
-> **Uwaga:** na Windowsie do poprawnego wypakowania narzędzi podpisu wymagana jest możliwość tworzenia dowiązań symbolicznych. Włącz tryb programisty w ustawieniach systemu albo uruchom polecenie w terminalu z uprawnieniami administratora, jeśli podczas budowania pojawi się błąd `A required privilege is not held by the client`.
+> **Note:** On Windows the packaging toolchain may need symlink support. Enable “Developer Mode” in system settings or run the command prompt with elevated privileges if you encounter the error `A required privilege is not held by the client`.
 
-## Przyszłe kroki
+## Roadmap
 
-- Dodanie historii sesji i lokalnego magazynu danych.
-- Wsparcie dla więcej niż jednego licznika.
-- Przygotowanie paczki instalacyjnej na inne platformy.
+- Session history with persistent storage.
+- Installation packages for macOS and Linux.

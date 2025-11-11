@@ -1,5 +1,2 @@
-import { contextBridge } from 'electron';
+export { };
 
-contextBridge.exposeInMainWorld('tractivityApi', {
-  appVersion: () => '0.1.0'
-});
