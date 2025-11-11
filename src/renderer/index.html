@@ -22,6 +22,7 @@
     <section class="panel menu-panel">
       <nav class="menu" id="sideMenu">
         <button id="menuSettings" class="menu-item" type="button" data-screen="settings">Settings</button>
+        <button id="menuAnalytics" class="menu-item" type="button" data-screen="analytics">Analytics</button>
       </nav>
     </section>
     <section class="panel main-panel">
@@ -54,6 +55,25 @@
         <p class="setting-hint">
           Changes save automatically. When AFK handling is enabled the timer pauses after the idle delay elapses.
         </p>
+      </section>
+      <section class="analytics-panel hidden" id="analyticsPanel">
+        <header class="analytics-header">
+          <h2>Analytics</h2>
+          <p class="analytics-description">Track how active time changes in real time.</p>
+        </header>
+        <div class="analytics-chart-container">
+          <canvas id="analyticsCanvas" width="640" height="360" role="img" aria-label="Activity over time"></canvas>
+          <div class="analytics-empty hidden" id="analyticsEmpty">
+            <p>Start the timer to populate the analytics chart.</p>
+          </div>
+        </div>
+        <footer class="analytics-footer">
+          <div class="analytics-summary">
+            <span class="analytics-summary-item"><strong>Active time:</strong> <span id="analyticsActiveValue">00:00:00</span></span>
+            <span class="analytics-summary-item"><strong>Time range:</strong> <span id="analyticsRangeValue">—</span></span>
+            <span class="analytics-summary-item"><strong>Status:</strong> <span id="analyticsStatusValue">Idle</span></span>
+          </div>
+        </footer>
       </section>
     </section>
     <section class="panel todo-panel">

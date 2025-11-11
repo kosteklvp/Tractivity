@@ -25,6 +25,13 @@ type TimerContext = {
   handleUserActivity: () => void;
 };
 
+type TimerHooks = {
+  onTimerStart?: () => void;
+  onManualPause?: () => void;
+  onTimerReset?: () => void;
+  onTick?: (payload: { running: boolean; pausedByIdle: boolean }) => void;
+};
+
 type TodoPanelElements = {
   form: HTMLFormElement;
   input: HTMLInputElement;
@@ -34,7 +41,34 @@ type TodoPanelElements = {
   message: HTMLElement;
 };
 
+type MainScreen = 'placeholder' | 'settings' | 'analytics';
+
+type AnalyticsElements = {
+  panel: HTMLElement;
+  canvas: HTMLCanvasElement;
+  emptyState: HTMLElement;
+  activeValue: HTMLElement;
+  rangeValue: HTMLElement;
+  statusValue: HTMLElement;
+};
+
+type AnalyticsController = {
+  handleTimerStart: () => void;
+  handleManualPause: () => void;
+  handleReset: () => void;
+  handleTick: (payload: { running: boolean; pausedByIdle: boolean }) => void;
+  forceRender: () => void;
+};
+
+type MainPanelManager = {
+  setActiveScreen: (screen: MainScreen) => void;
+  getCurrentScreen: () => MainScreen;
+  menuButtons: Partial<Record<Exclude<MainScreen, 'placeholder'>, HTMLButtonElement | null>>;
+};
+
 const TODO_MESSAGE_TIMEOUT_MS = 4000;
+
+let analyticsController: AnalyticsController | null = null;
 
 const DEFAULT_SETTINGS: SettingsState = {
   afkHandlingEnabled: true,
@@ -102,7 +136,48 @@ const getUIElements = (): UIElements => {
   return { startPauseButton, resetButton, display, statusLabel, debugInfo };
 };
 
-const initializeTimerUI = (initialSettings: SettingsState): TimerContext => {
+const createMainPanelManager = (): MainPanelManager => {
+  const panels: Record<MainScreen, HTMLElement | null> = {
+    placeholder: document.getElementById('mainPlaceholder'),
+    settings: document.getElementById('settingsPanel'),
+    analytics: document.getElementById('analyticsPanel')
+  };
+
+  const menuButtons: Partial<Record<Exclude<MainScreen, 'placeholder'>, HTMLButtonElement | null>> = {
+    settings: document.getElementById('menuSettings') as HTMLButtonElement | null,
+    analytics: document.getElementById('menuAnalytics') as HTMLButtonElement | null
+  };
+
+  let currentScreen: MainScreen = 'placeholder';
+
+  const setActiveScreen = (screen: MainScreen): void => {
+    currentScreen = screen;
+
+    (Object.entries(panels) as Array<[MainScreen, HTMLElement | null]>).forEach(([key, panel]) => {
+      if (!panel) {
+        return;
+      }
+
+      panel.classList.toggle('hidden', key !== screen);
+    });
+
+    Object.entries(menuButtons).forEach(([key, button]) => {
+      if (!button) {
+        return;
+      }
+
+      button.classList.toggle('is-active', key === screen);
+    });
+  };
+
+  return {
+    setActiveScreen,
+    getCurrentScreen: () => currentScreen,
+    menuButtons
+  };
+};
+
+const initializeTimerUI = (initialSettings: SettingsState, hooks: TimerHooks = {}): TimerContext => {
   currentSettings = { ...initialSettings };
 
   const timer = new Timer();
@@ -177,9 +252,11 @@ const initializeTimerUI = (initialSettings: SettingsState): TimerContext => {
     if (timer.isRunning()) {
       timer.pause();
       inactivityMonitor.clearAutoPause();
+      hooks.onManualPause?.();
     } else {
       timer.start();
       inactivityMonitor.clearAutoPause();
+      hooks.onTimerStart?.();
     }
 
     handleUserActivity();
@@ -189,6 +266,7 @@ const initializeTimerUI = (initialSettings: SettingsState): TimerContext => {
   resetButton.addEventListener('click', () => {
     timer.reset();
     inactivityMonitor.clearAutoPause();
+    hooks.onTimerReset?.();
     handleUserActivity();
     syncDisplay();
   });
@@ -197,6 +275,7 @@ const initializeTimerUI = (initialSettings: SettingsState): TimerContext => {
     void inactivityMonitor.evaluate().finally(() => {
       syncDisplay();
       renderDiagnostics();
+      hooks.onTick?.({ running: timer.isRunning(), pausedByIdle: inactivityMonitor.isPausedByInactivity() });
     });
   };
 
@@ -216,31 +295,13 @@ const initializeTimerUI = (initialSettings: SettingsState): TimerContext => {
 };
 
 const initializeSettingsPanel = (context: TimerContext): void => {
-  const placeholder = document.getElementById('mainPlaceholder');
   const settingsPanel = document.getElementById('settingsPanel');
-  const settingsButton = document.getElementById('menuSettings') as HTMLButtonElement | null;
   const afkToggle = document.getElementById('afkToggle') as HTMLInputElement | null;
   const afkThresholdInput = document.getElementById('afkThresholdInput') as HTMLInputElement | null;
 
-  if (!placeholder || !settingsPanel || !settingsButton || !afkToggle || !afkThresholdInput) {
+  if (!settingsPanel || !afkToggle || !afkThresholdInput) {
     throw new Error('Settings panel elements are missing from the document.');
   }
-
-  const showSettings = (): void => {
-    placeholder.classList.add('hidden');
-    settingsPanel.classList.remove('hidden');
-    settingsButton.classList.add('is-active');
-  };
-
-  settingsButton.addEventListener('click', showSettings);
-
-  const unsubscribe = window.tractivityApi?.onOpenSettings(() => {
-    showSettings();
-  });
-
-  window.addEventListener('beforeunload', () => {
-    unsubscribe?.();
-  });
 
   const syncForm = (): void => {
     afkToggle.checked = currentSettings.afkHandlingEnabled;
@@ -307,7 +368,277 @@ const initializeSettingsPanel = (context: TimerContext): void => {
 
   syncForm();
   applySettings();
-  showSettings();
+};
+
+const getAnalyticsElements = (): AnalyticsElements => {
+  const panel = document.getElementById('analyticsPanel');
+  const canvas = document.getElementById('analyticsCanvas') as HTMLCanvasElement | null;
+  const emptyState = document.getElementById('analyticsEmpty');
+  const activeValue = document.getElementById('analyticsActiveValue');
+  const rangeValue = document.getElementById('analyticsRangeValue');
+  const statusValue = document.getElementById('analyticsStatusValue');
+
+  if (!panel || !canvas || !emptyState || !activeValue || !rangeValue || !statusValue) {
+    throw new Error('Analytics panel elements are missing from the document.');
+  }
+
+  return { panel, canvas, emptyState, activeValue, rangeValue, statusValue };
+};
+
+const initializeAnalyticsPanel = (): AnalyticsController => {
+  const elements = getAnalyticsElements();
+  const context = elements.canvas.getContext('2d');
+
+  if (!context) {
+    throw new Error('Failed to obtain 2D context for analytics canvas.');
+  }
+
+  type Sample = { time: number; value: number };
+
+  const state: {
+    startTimestamp: number | null;
+    lastTickTimestamp: number | null;
+    lastSampleSecond: number | null;
+    activeSeconds: number;
+    samples: Sample[];
+  } = {
+    startTimestamp: null,
+    lastTickTimestamp: null,
+    lastSampleSecond: null,
+    activeSeconds: 0,
+    samples: []
+  };
+
+  const MAX_SAMPLES = 7200; // up to two hours of per-second samples
+
+  const formatClockLabel = (date: Date): string =>
+    date.toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    });
+
+  const ensureCanvasSize = (): { ratio: number; width: number; height: number } => {
+    const ratio = window.devicePixelRatio ?? 1;
+    const width = elements.canvas.clientWidth || elements.panel.clientWidth || 1;
+    const height = elements.canvas.clientHeight || elements.panel.clientHeight || 1;
+    const pixelWidth = Math.max(1, Math.floor(width * ratio));
+    const pixelHeight = Math.max(1, Math.floor(height * ratio));
+
+    if (elements.canvas.width !== pixelWidth || elements.canvas.height !== pixelHeight) {
+      elements.canvas.width = pixelWidth;
+      elements.canvas.height = pixelHeight;
+    }
+
+    return { ratio, width, height };
+  };
+
+  const clearCanvas = (): void => {
+    context.save();
+    context.setTransform(1, 0, 0, 1, 0, 0);
+    context.clearRect(0, 0, elements.canvas.width, elements.canvas.height);
+    context.restore();
+  };
+
+  const updateSummary = (now: number): void => {
+    elements.activeValue.textContent = formatElapsed(Math.round(Math.max(0, state.activeSeconds) * 1000));
+    if (state.startTimestamp) {
+      elements.rangeValue.textContent = `${formatClockLabel(new Date(state.startTimestamp))} – ${formatClockLabel(new Date(now))}`;
+    } else {
+      elements.rangeValue.textContent = '—';
+    }
+  };
+
+  const renderChart = (): void => {
+    if (!state.startTimestamp || state.samples.length < 2) {
+      clearCanvas();
+      elements.emptyState.classList.remove('hidden');
+      return;
+    }
+
+    const { ratio, width, height } = ensureCanvasSize();
+
+    context.save();
+    context.setTransform(1, 0, 0, 1, 0, 0);
+    context.clearRect(0, 0, elements.canvas.width, elements.canvas.height);
+    context.scale(ratio, ratio);
+
+    const padding = { top: 18, right: 24, bottom: 44, left: 56 };
+    const plotWidth = Math.max(1, width - padding.left - padding.right);
+    const plotHeight = Math.max(1, height - padding.top - padding.bottom);
+
+    const times = state.samples.map((sample) => (sample.time - state.startTimestamp!) / 1000);
+    const values = state.samples.map((sample) => sample.value);
+    const xMax = Math.max(10, times[times.length - 1] ?? 10);
+    const yMax = Math.max(10, ...values, 1);
+
+    const projectX = (seconds: number): number => padding.left + (seconds / xMax) * plotWidth;
+    const projectY = (value: number): number => height - padding.bottom - (value / yMax) * plotHeight;
+
+    // Axes
+    context.strokeStyle = '#d2d2d2';
+    context.lineWidth = 1;
+    context.beginPath();
+    context.moveTo(padding.left, padding.top);
+    context.lineTo(padding.left, height - padding.bottom);
+    context.lineTo(width - padding.right, height - padding.bottom);
+    context.stroke();
+
+    // Horizontal grid (mid)
+    context.setLineDash([4, 4]);
+    context.beginPath();
+    context.moveTo(padding.left, projectY(yMax / 2));
+    context.lineTo(width - padding.right, projectY(yMax / 2));
+    context.stroke();
+    context.setLineDash([]);
+
+    // Line
+    const lastSample = state.samples[state.samples.length - 1];
+
+    const isManualPause = elements.statusValue.textContent === 'Paused';
+    context.lineWidth = 3;
+    for (let i = 1; i < state.samples.length; i += 1) {
+      const previous = state.samples[i - 1];
+      const current = state.samples[i];
+      const previousX = projectX((previous.time - state.startTimestamp!) / 1000);
+      const previousY = projectY(previous.value);
+      const currentX = projectX((current.time - state.startTimestamp!) / 1000);
+      const currentY = projectY(current.value);
+      const delta = current.value - previous.value;
+
+      let strokeColor = '#4452ff';
+      if (!isManualPause) {
+        if (delta > 0.0001) {
+          strokeColor = '#1a7f37';
+        } else if (delta < -0.0001) {
+          strokeColor = '#c62828';
+        }
+      }
+
+      context.beginPath();
+      context.moveTo(previousX, previousY);
+      context.lineTo(currentX, currentY);
+      context.strokeStyle = strokeColor;
+      context.stroke();
+    }
+
+    // Axis labels
+    context.fillStyle = '#4a4a4a';
+    context.font = '12px "Segoe UI", Arial, sans-serif';
+    context.textAlign = 'left';
+    context.fillText('0s', padding.left - 44, height - padding.bottom + 4);
+    context.fillText(`${Math.round(yMax)}s`, padding.left - 44, padding.top + 12);
+
+    context.textAlign = 'left';
+    context.fillText(formatClockLabel(new Date(state.startTimestamp)), padding.left, height - padding.bottom + 28);
+    context.textAlign = 'right';
+    context.fillText(formatClockLabel(new Date(lastSample.time)), width - padding.right, height - padding.bottom + 28);
+
+    context.restore();
+    elements.emptyState.classList.add('hidden');
+  };
+
+  const resetState = (): void => {
+    state.startTimestamp = null;
+    state.lastTickTimestamp = null;
+    state.lastSampleSecond = null;
+    state.activeSeconds = 0;
+    state.samples = [];
+    elements.statusValue.textContent = 'Idle';
+    elements.activeValue.textContent = formatElapsed(0);
+    elements.rangeValue.textContent = '—';
+    elements.emptyState.classList.remove('hidden');
+    clearCanvas();
+  };
+
+  resetState();
+
+  return {
+    handleTimerStart: () => {
+      const now = Date.now();
+      const currentSecond = Math.floor(now / 1000);
+      if (!state.startTimestamp) {
+        state.startTimestamp = now;
+        state.samples = [{ time: currentSecond * 1000, value: state.activeSeconds }];
+        state.lastSampleSecond = currentSecond;
+      }
+      state.lastTickTimestamp = now;
+      elements.statusValue.textContent = 'Active';
+      updateSummary(now);
+      renderChart();
+    },
+    handleManualPause: () => {
+      const now = Date.now();
+      state.lastTickTimestamp = now;
+      elements.statusValue.textContent = 'Paused';
+      updateSummary(now);
+      renderChart();
+    },
+    handleReset: () => {
+      resetState();
+    },
+    handleTick: ({ running, pausedByIdle }) => {
+      const now = Date.now();
+
+      if (!state.startTimestamp) {
+        if (!running) {
+          return;
+        }
+
+        const currentSecond = Math.floor(now / 1000);
+        state.startTimestamp = now;
+        state.samples = [{ time: currentSecond * 1000, value: state.activeSeconds }];
+        state.lastSampleSecond = currentSecond;
+      }
+
+      if (!state.lastTickTimestamp) {
+        state.lastTickTimestamp = now;
+        updateSummary(now);
+        return;
+      }
+
+      const deltaSeconds = (now - state.lastTickTimestamp) / 1000;
+      state.lastTickTimestamp = now;
+
+      if (pausedByIdle) {
+        elements.statusValue.textContent = 'AFK';
+        state.activeSeconds = Math.max(0, state.activeSeconds - deltaSeconds);
+      } else if (running) {
+        elements.statusValue.textContent = 'Active';
+        state.activeSeconds = Math.max(0, state.activeSeconds + deltaSeconds);
+      } else {
+        elements.statusValue.textContent = 'Paused';
+        updateSummary(now);
+        renderChart();
+        return;
+      }
+
+      // Round to milliseconds precision for display stability
+      state.activeSeconds = Math.max(0, state.activeSeconds);
+
+      const lastSample = state.samples[state.samples.length - 1];
+      const currentSecond = Math.floor(now / 1000);
+      const shouldRecordSample = state.lastSampleSecond === null || currentSecond > state.lastSampleSecond || !lastSample;
+
+      if (shouldRecordSample) {
+        const sampleTime = currentSecond * 1000;
+        state.samples.push({ time: sampleTime, value: state.activeSeconds });
+        state.lastSampleSecond = currentSecond;
+      }
+
+      if (state.samples.length > MAX_SAMPLES) {
+        state.samples.splice(0, state.samples.length - MAX_SAMPLES);
+      }
+
+      updateSummary(now);
+      renderChart();
+    },
+    forceRender: () => {
+      updateSummary(Date.now());
+      renderChart();
+    }
+  };
 };
 
 const getTodoPanelElements = (): TodoPanelElements => {
@@ -484,9 +815,49 @@ const initializeTodoPanel = async (): Promise<void> => {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+  const panelManager = createMainPanelManager();
+
+  const switchScreen = (screen: MainScreen): void => {
+    panelManager.setActiveScreen(screen);
+
+    if (screen === 'analytics') {
+      window.requestAnimationFrame(() => {
+        analyticsController?.forceRender();
+      });
+    }
+  };
+
   const loadedSettings = loadSettings();
-  const timerContext = initializeTimerUI(loadedSettings);
+  const timerContext = initializeTimerUI(loadedSettings, {
+    onTimerStart: () => {
+      analyticsController?.handleTimerStart();
+    },
+    onManualPause: () => {
+      analyticsController?.handleManualPause();
+    },
+    onTimerReset: () => {
+      analyticsController?.handleReset();
+    },
+    onTick: (payload) => {
+      analyticsController?.handleTick(payload);
+    }
+  });
 
   initializeSettingsPanel(timerContext);
+  analyticsController = initializeAnalyticsPanel();
   void initializeTodoPanel();
+
+  const api = window.tractivityApi;
+  const unsubscribeSettings = api?.onOpenSettings(() => {
+    switchScreen('settings');
+  });
+
+  window.addEventListener('beforeunload', () => {
+    unsubscribeSettings?.();
+  });
+
+  panelManager.menuButtons.settings?.addEventListener('click', () => switchScreen('settings'));
+  panelManager.menuButtons.analytics?.addEventListener('click', () => switchScreen('analytics'));
+
+  switchScreen('settings');
 });

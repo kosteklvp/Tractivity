@@ -72,6 +72,79 @@ body {
   gap: 8px;
 }
 
+.analytics-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+}
+
+.analytics-header h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.analytics-description {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: #575757;
+}
+
+.analytics-chart-container {
+  position: relative;
+  border: 1px solid #dcdcdc;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 12px;
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 200px;
+  height: clamp(200px, 35vh, 360px);
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.analytics-chart-container canvas {
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.analytics-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 8px;
+  font-size: 13px;
+  color: #6b6b6b;
+  text-align: center;
+  padding: 24px;
+}
+
+.analytics-footer {
+  border-top: 1px solid #e7e7e7;
+  padding-top: 12px;
+  font-size: 13px;
+  color: #444444;
+}
+
+.analytics-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+}
+
+.analytics-summary-item strong {
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
 .menu-item {
   padding: 10px 12px;
   border-radius: 8px;
