@@ -2,11 +2,11 @@ import { app, BrowserWindow, ipcMain, Menu, powerMonitor, type MenuItemConstruct
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  initializeTodoStore,
-  listTodos,
-  createTodo,
-  setTodoCompleted,
-  deleteTodo
+    createTodo,
+    deleteTodo,
+    initializeTodoStore,
+    listTodos,
+    setTodoCompleted
 } from './todoStore.js';
 
 const appDir = dirname(fileURLToPath(import.meta.url));
