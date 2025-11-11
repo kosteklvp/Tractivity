@@ -13,7 +13,7 @@ const createMainWindow = (): void => {
     minWidth: 800,
     minHeight: 600,
     resizable: true,
-    fullscreenable: true,
+    fullscreenable: true,//
     title: 'Tractivity',
     icon: join(appDir, '../assets/icon.ico'),
     webPreferences: {
