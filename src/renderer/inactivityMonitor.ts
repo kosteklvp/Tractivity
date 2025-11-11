@@ -17,12 +17,18 @@ export class InactivityMonitor {
 
   private lastEffectiveIdleMs = 0;
 
+  private thresholdMs: number;
+
+  private enabled = true;
+
   constructor(
     private readonly timer: TimerLike,
-    private readonly thresholdMs: number,
+    thresholdMs: number,
     private readonly idleTimeProvider?: IdleTimeProvider,
     private readonly onStateChange?: () => void
-  ) {}
+  ) {
+    this.thresholdMs = thresholdMs;
+  }
 
   markActivity(timestamp: number = Date.now()): void {
     this.lastActivity = timestamp;
@@ -36,6 +42,13 @@ export class InactivityMonitor {
 
   async evaluate(): Promise<void> {
     if (this.evaluating) {
+      return;
+    }
+
+    if (!this.enabled) {
+      this.lastSystemIdleMs = undefined;
+      this.lastEffectiveIdleMs = 0;
+      this.pausedByIdle = false;
       return;
     }
 
@@ -114,5 +127,35 @@ export class InactivityMonitor {
       effectiveIdleMs: this.lastEffectiveIdleMs,
       pausedByIdle: this.pausedByIdle
     };
+  }
+
+  setThresholdMs(thresholdMs: number): void {
+    const sanitized = Math.max(1, Math.floor(thresholdMs));
+    this.thresholdMs = sanitized;
+  }
+
+  setEnabled(enabled: boolean): void {
+    if (this.enabled === enabled) {
+      return;
+    }
+
+    this.enabled = enabled;
+
+    if (!enabled) {
+      this.lastSystemIdleMs = undefined;
+      this.lastEffectiveIdleMs = 0;
+
+      if (this.pausedByIdle) {
+        this.pausedByIdle = false;
+
+        if (!this.timer.isRunning()) {
+          this.timer.start();
+        }
+
+        this.onStateChange?.();
+      }
+    } else {
+      this.lastActivity = Date.now();
+    }
   }
 }

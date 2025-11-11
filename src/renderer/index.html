@@ -20,14 +20,41 @@
       </div>
     </section>
     <section class="panel menu-panel">
-      <nav class="menu-placeholder">
-        <p>Menu placeholder</p>
+      <nav class="menu" id="sideMenu">
+        <button id="menuSettings" class="menu-item" type="button" data-screen="settings">Settings</button>
       </nav>
     </section>
     <section class="panel main-panel">
-      <div class="main-placeholder">
+      <div class="main-placeholder" id="mainPlaceholder">
         <p>Main content placeholder</p>
       </div>
+      <section class="settings-panel hidden" id="settingsPanel">
+        <header class="settings-header">
+          <h2>Settings</h2>
+          <p class="settings-description">Configure idle detection and other preferences.</p>
+        </header>
+        <div class="setting-row">
+          <label class="setting-checkbox" for="afkToggle">
+            <input id="afkToggle" type="checkbox" />
+            <span>AFK handling</span>
+          </label>
+          <div class="setting-input">
+            <label class="setting-label" for="afkThresholdInput">Idle delay (seconds)</label>
+            <input
+              id="afkThresholdInput"
+              type="number"
+              inputmode="numeric"
+              min="1"
+              max="1800"
+              step="1"
+              pattern="[0-9]*"
+            />
+          </div>
+        </div>
+        <p class="setting-hint">
+          Changes save automatically. When AFK handling is enabled the timer pauses after the idle delay elapses.
+        </p>
+      </section>
     </section>
   </main>
   <footer class="dev-footer">

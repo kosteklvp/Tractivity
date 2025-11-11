@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, powerMonitor } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu, powerMonitor, type MenuItemConstructorOptions } from 'electron';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -23,7 +23,24 @@ const createMainWindow = (): void => {
     }
   });
 
-  window.setMenu(null);
+  const template: MenuItemConstructorOptions[] = [
+    {
+      label: 'File',
+      submenu: [
+        {
+          label: 'Settings',
+          accelerator: 'Ctrl+,',
+          click: () => {
+            window.webContents.send('ui:open-settings');
+          }
+        },
+        { type: 'separator' },
+        process.platform === 'darwin' ? { role: 'close' } : { role: 'quit' }
+      ]
+    }
+  ];
+
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
   window.loadFile(join(appDir, '../renderer/index.html'));
 };
 
