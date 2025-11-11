@@ -1,6 +1,6 @@
 {
   "name": "tractivity",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Tractivity desktop app for tracking effective work time",
   "main": "dist/main/main.js",
   "type": "module",
@@ -9,14 +9,14 @@
     "build": "npm run clean && npm run build:ts && npm run copy-static",
     "build:ts": "tsc -p tsconfig.json",
     "clean": "rimraf dist",
-  "copy-static": "copyfiles -u 2 \"src/renderer/**/*.html\" \"src/renderer/**/*.css\" dist/renderer && copyfiles -u 2 \"src/preload/*.cjs\" dist/preload && copyfiles -u 2 \"src/assets/**/*\" dist/assets",
+    "copy-static": "copyfiles -u 2 \"src/renderer/**/*.html\" \"src/renderer/**/*.css\" dist/renderer && copyfiles -u 2 \"src/preload/*.cjs\" dist/preload && copyfiles -u 2 \"src/assets/**/*\" dist/assets",
     "start": "npm run build && electron dist/main/main.js",
     "dev": "concurrently \"npm:watch:ts\" \"npm:serve\"",
     "watch:ts": "tsc -w -p tsconfig.json",
     "serve": "wait-on dist/main/main.js dist/renderer/index.html && electron dist/main/main.js",
     "test": "vitest run",
     "lint": "eslint . --ext .ts",
-    "dist:win": "cmd /c \"taskkill /F /IM Tractivity.exe 2>NUL & taskkill /F /IM electron.exe 2>NUL & exit /B 0\" && rimraf release/windows-build && npm run build && electron-builder --win"
+    "dist": "cmd /c \"taskkill /F /IM Tractivity.exe 2>NUL & taskkill /F /IM electron.exe 2>NUL & exit /B 0\" && rimraf release/windows-build && npm run build && electron-builder --win"
   },
   "keywords": [
     "electron",
