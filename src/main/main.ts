@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 const appDir = dirname(fileURLToPath(import.meta.url));
 
 ipcMain.handle('system:getIdleTime', () => powerMonitor.getSystemIdleTime());
-
+//
 const createMainWindow = (): void => {
   const window = new BrowserWindow({
     width: 800,
